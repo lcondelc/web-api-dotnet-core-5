@@ -1,11 +1,12 @@
 ﻿using AutoMapper;
 using CourseLibrary.API.Services;
 using Demo.Web.API.Models;
+using Demo.Web.API.Models.Parameters;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using CourseLibrary.API.Entities;
 
 namespace Demo.Web.API.Controllers
 {
@@ -24,15 +25,20 @@ namespace Demo.Web.API.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<AuthorDto>> GetAuthors()
+        [HttpHead]
+        public ActionResult<IEnumerable<AuthorDto>> GetAuthors([FromQuery] AuthorParameters authorParameters)
         {
-            var authors = _courseLibraryRepository.GetAuthors();
+            var authors = _courseLibraryRepository.GetAuthors(authorParameters);
+
+            if (authors is null || !authors.Any())
+                return NotFound();
+
             return Ok(_mapper.Map<IEnumerable<AuthorDto>>(authors));
         }
 
         [HttpGet]
-        [Route("{authorId}")]
-        public ActionResult<AuthorDto> GetAuthors(Guid authorId)
+        [Route("{authorId}", Name = "GetAuthor")]
+        public ActionResult<AuthorDto> GetAuthor(Guid authorId)
         {
             var author = _courseLibraryRepository.GetAuthor(authorId);
             if (author is null)
@@ -40,5 +46,25 @@ namespace Demo.Web.API.Controllers
 
             return Ok(_mapper.Map<AuthorDto>(author));
         }
+
+        [HttpPost]
+        public ActionResult<AuthorDto> CreateAuthor(AuthorForCreationDto author)
+        {
+            var authorEntity = _mapper.Map<Author>(author);
+            _courseLibraryRepository.AddAuthor(authorEntity);
+            _courseLibraryRepository.Save();
+            var authorToReturn = _mapper.Map<AuthorDto>(authorEntity);
+            return CreatedAtRoute("GetAuthor", new { authorId = authorEntity.Id }, authorToReturn);
+        }
+
+
+        [HttpOptions]
+        public ActionResult GetOptions()
+        {
+            Response.Headers.Add("Allow", "GET,OPTION,POST");
+            return Ok();
+        }
+
     }
+
 }
