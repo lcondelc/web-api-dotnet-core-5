@@ -57,6 +57,19 @@ namespace Demo.Web.API.Controllers
             return CreatedAtRoute("GetAuthor", new { authorId = authorEntity.Id }, authorToReturn);
         }
 
+        [HttpDelete]
+        [Route("{authorId}")]
+        public ActionResult<AuthorDto> DeleteAuthor(Guid authorId)
+        {
+            var author = _courseLibraryRepository.GetAuthor(authorId);
+            if (author is null)
+                return NotFound();
+
+            _courseLibraryRepository.DeleteAuthor(author);
+            _courseLibraryRepository.Save();
+
+            return NoContent();
+        }
 
         [HttpOptions]
         public ActionResult GetOptions()

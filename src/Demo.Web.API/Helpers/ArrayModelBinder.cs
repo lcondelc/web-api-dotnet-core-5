@@ -1,7 +1,5 @@
-﻿using AutoMapper.Execution;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
@@ -47,7 +45,6 @@ namespace Demo.Web.API.Helpers
 
             bindingContext.Result = ModelBindingResult.Success(bindingContext.Model);
             return Task.CompletedTask;
-
         }
     }
 }

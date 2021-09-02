@@ -3,11 +3,14 @@ using CourseLibrary.API.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json.Serialization;
 using System;
 
 namespace CourseLibrary.API
@@ -28,7 +31,38 @@ namespace CourseLibrary.API
             {
                 setupAction.ReturnHttpNotAcceptable = true;
                 setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
-            }).AddXmlDataContractSerializerFormatters();
+            })
+            .AddNewtonsoftJson(setupAction=>
+            {
+                setupAction.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+            })
+            .ConfigureApiBehaviorOptions(setupAction =>
+            {
+                setupAction.InvalidModelStateResponseFactory = context =>
+                {
+                    // create a problem details object
+                    var problemDetailsFactory = context.HttpContext.RequestServices
+                             .GetRequiredService<ProblemDetailsFactory>();
+                    var problemDetails = problemDetailsFactory.CreateValidationProblemDetails(context.HttpContext, context.ModelState);
+                    problemDetails.Title = "See the errors field for details";
+                    problemDetails.Instance = context.HttpContext.Request.Path;
+
+                    var actionExecutinContext = context as Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext;
+                    if (context.ModelState.ErrorCount > 0 &&
+                        actionExecutinContext?.ActionArguments.Count == context.ActionDescriptor.Parameters.Count)
+                    {
+                        problemDetails.Type = "Url of the error detail page";
+                        problemDetails.Status = StatusCodes.Status422UnprocessableEntity;
+                        problemDetails.Title = "One or more validation erros occured.";
+                    }
+
+                    return new UnprocessableEntityObjectResult(problemDetails)
+                    {
+                        ContentTypes = { "application/problem+json" }
+                    };
+
+                };
+            });
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 

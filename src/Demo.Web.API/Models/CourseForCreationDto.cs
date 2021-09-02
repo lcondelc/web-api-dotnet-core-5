@@ -1,10 +1,9 @@
-﻿using System;
+﻿using Demo.Web.API.Models.Base;
 
 namespace Demo.Web.API.Models
 {
-    public class CourseForCreationDto
+    public class CourseForCreationDto: CourseForManipulationDto
     {
-        public string Title { get; set; }
-        public string Description { get; set; }
+
     }
 }
